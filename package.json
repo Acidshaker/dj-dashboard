@@ -1,0 +1,70 @@
+{
+  "name": "dj-dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:local": "vite --mode devlocal",
+    "dev:testing": "vite --mode testing",
+    "dev:production": "vite --mode production",
+    "build": "vite build --mode production",
+    "test": "vite build --mode testing",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.6",
+    "@hookform/resolvers": "^5.1.1",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/joy": "^5.0.0-beta.52",
+    "@mui/material": "^7.3.2",
+    "@mui/x-data-grid": "^8.9.1",
+    "@mui/x-date-pickers": "^8.11.1",
+    "@mui/x-date-pickers-pro": "^8.11.1",
+    "@reduxjs/toolkit": "^2.8.2",
+    "axios": "^1.10.0",
+    "bwip-js": "^4.7.0",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.18",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^3.0.2",
+    "jwt-decode": "^4.0.0",
+    "react": "^19.1.0",
+    "react-color": "^2.19.3",
+    "react-data-table-component": "^7.7.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.60.0",
+    "react-qr-code": "^2.0.18",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.7.0",
+    "react-toastify": "^11.0.5",
+    "styled-components": "^6.1.19",
+    "sweetalert2": "^11.22.2",
+    "sweetalert2-react-content": "^5.1.0",
+    "uuid": "^11.1.0",
+    "yup": "^1.6.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react-swc": "^3.10.2",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "msw": "^2.10.5",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.35.1",
+    "vite": "^7.0.4",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  dj-dashboard-v1:
+    image: 330121144853.dkr.ecr.us-east-2.amazonaws.com/dj-dashboard-v1:latest
+    container_name: dj-dashboard-v1
+    restart: unless-stopped
+    networks:
+      - default
+    environment:
+      - VIRTUAL_HOST=dj-dashboard-testing.paramq.com
+      - LETSENCRYPT_HOST=dj-dashboard-testing.paramq.com
+      - VIRTUAL_PORT=80
+networks:
+  default:
+    external:
+      name: net-proxy
