@@ -25,7 +25,7 @@ import AsyncMultiAutocomplete from "../shared/AsyncMultiAutocomplete";
 
 interface props {
   open: boolean;
-  handleClose: () => void;
+  handleClose: (item: any | null) => void;
   data?: any;
   isEdit?: boolean;
 }
@@ -94,12 +94,13 @@ export const GroupForm = ({
       if (!isEdit) {
         const res = await groups.createGroup(newBody);
         console.log(res.data.data);
+        handleClose(res.data.data);
       } else {
         const res = await groups.updateGroup(data.id, newBody);
         console.log(res.data);
+        handleClose(res.data.data);
       }
       toast.success(`Grupo ${isEdit ? "actualizado" : "registrado"} con éxito`);
-      handleClose();
     } catch (err) {
       console.log(err);
     } finally {
@@ -109,7 +110,7 @@ export const GroupForm = ({
 
   const handleCancel = () => {
     reset();
-    handleClose();
+    handleClose(null);
   };
 
   useEffect(() => {
@@ -146,7 +147,7 @@ export const GroupForm = ({
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
               <Grid container spacing={2}>
-                <Grid size={{ md: 12, xs: 12 }}>
+                <Grid size={{ md: 12, xs: 12, sm: 6 }}>
                   <TextField
                     label="Nombre"
                     fullWidth
@@ -158,15 +159,13 @@ export const GroupForm = ({
                     helperText={errors.name?.message || " "}
                   />
                 </Grid>
-                <Grid size={{ md: 12, xs: 12 }}>
+                <Grid size={{ md: 12, xs: 12, sm: 6 }}>
                   <Stack spacing={1}>
                     <AsyncMultiAutocomplete
                       ref={autocompleteRef}
                       name="packages"
                       label="Paquetes"
-                      {...register("packages", {
-                        required: required("Al menos un paquete"),
-                      })}
+                      rules={{ required: required("Al menos un paquete") }}
                       control={control}
                       errors={errors}
                       fetchFn={getPackages}
@@ -174,7 +173,13 @@ export const GroupForm = ({
                       maxSelections={5}
                       disableSelected={true}
                       renderChipLabel={(pkg) =>
-                        `${pkg.name} - $${pkg.tip.toFixed(2)}`
+                        `${pkg.name} - ${
+                          pkg.tip > 0
+                            ? "$" + pkg.tip.toFixed(2)
+                            : pkg.tip == 0
+                            ? "Gratis"
+                            : "Voluntaria"
+                        }`
                       }
                       valueModel={(pkg) => pkg}
                     />

@@ -66,11 +66,30 @@ export const useAlerts = () => {
     });
   };
 
+  const showConfirmationAlertWithCheckbox = async (
+    foo: (checkboxValue: boolean) => Promise<any>,
+    label: string,
+    description?: string
+  ) => {
+    showAlert({
+      title: "Atención",
+      description: description || "¿Seguro que deseas continuar?",
+      type: "warning",
+      showCancel: true,
+      confirmText: "Continuar",
+      cancelText: "Cancelar",
+      onConfirm: foo,
+      showCheckbox: true,
+      checkboxLabel: label,
+    });
+  };
+
   return {
     deleteAlert,
     confirmationAlert,
     confirmationAlert2,
     errorAlert,
     successAlert,
+    showConfirmationAlertWithCheckbox,
   };
 };

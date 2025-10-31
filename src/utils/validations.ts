@@ -53,13 +53,13 @@ export const minValue =
       ? "Debe ser un número válido"
       : num >= min
       ? true
-      : `Debe ser mayor o igual a ${min}`;
+      : `Debe ser mayor o igual a ${min.toFixed(2)}`;
   };
 
 // ✅ Número con decimales limitados
 export const decimalsLength =
   (maxDecimals: number) =>
-  (value: number): true | string => {
+  (value: number | string): true | string => {
     const stringValue = value.toString();
     const match = stringValue.match(/^(\d+)(\.(\d+))?$/);
     if (!match) return "Debe ser un número válido";

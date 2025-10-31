@@ -3,23 +3,9 @@ import Header from "@/components/layouts/Header";
 import Sidebar from "@/components/layouts/SideBar";
 import Loader from "@/components/shared/Loader";
 import { AlertProvider } from "@/providers/AlertProvider";
-import { initGlobalSocket } from "@/utils/globalSocket";
 import { Box, CssBaseline, Toolbar, useTheme } from "@mui/material";
-import { useEffect } from "react";
 
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          console.log("🔔 Permiso de notificación concedido");
-        }
-      });
-    }
-
-    initGlobalSocket();
-  }, []);
-
+const ClientLayout = ({ children }: { children: React.ReactNode }) => {
   const theme = useTheme();
   return (
     <>
@@ -27,7 +13,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         <CssBaseline />
         <Loader />
         <Box sx={{ display: "flex", height: "100vh" }}>
-          <Sidebar />
           <Box
             sx={{
               flexGrow: 1,
@@ -37,8 +22,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               backgroundColor: theme.palette.background.default,
             }}
           >
-            <Header />
-            <Toolbar /> {/* Espaciador para AppBar */}
             <Box
               sx={{
                 flexGrow: 1,
@@ -57,4 +40,4 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default DashboardLayout;
+export default ClientLayout;

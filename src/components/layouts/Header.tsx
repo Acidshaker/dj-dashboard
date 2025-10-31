@@ -54,6 +54,11 @@ const Header = () => {
     navigate("/login");
   };
 
+  const goToSettings = () => {
+    navigate("/me");
+    setAnchorEl(null);
+  };
+
   const getInitials = () => {
     if (user) {
       const name = user.first_name.split(" ");
@@ -212,16 +217,16 @@ const Header = () => {
           transformOrigin={{ horizontal: "right", vertical: "top" }}
           anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
         >
-          <MenuItem onClick={handleClose}>
+          <MenuItem onClick={goToSettings}>
             <Avatar /> Mi cuenta
           </MenuItem>
           <Divider />
-          <MenuItem onClick={handleClose}>
+          {/* <MenuItem onClick={goToSettings}>
             <ListItemIcon>
               <Settings fontSize="small" />
             </ListItemIcon>
             Configuración
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem onClick={logout}>
             <ListItemIcon>
               <Logout fontSize="small" />

@@ -12,7 +12,7 @@ const Footer = () => {
     >
       <Divider sx={{ mb: 1 }} />
       <Typography variant="body2" color="textSecondary">
-        © {new Date().getFullYear()} Dj admin
+        © {new Date().getFullYear()} SPIN DJ
       </Typography>
     </Paper>
   );

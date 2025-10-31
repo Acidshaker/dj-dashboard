@@ -11,6 +11,7 @@ import {
   Drawer as MuiDrawer,
   Typography,
   Tooltip,
+  Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
@@ -22,7 +23,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { toggleNavBar } from "../../store/uiSlice";
 import { useLocation, useNavigate } from "react-router-dom";
-import logo2 from "../../assets/dj-logo.png";
+import logo2 from "../../assets/spindj-logo.jpg";
 
 const drawerWidth = 240;
 
@@ -161,7 +162,7 @@ const Sidebar = () => {
       <DrawerHeader sx={{ justifyContent: open ? "space-evenly" : "center" }}>
         {open && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <img
+            <Avatar
               src={logo2}
               alt="Logo"
               style={{
@@ -170,8 +171,8 @@ const Sidebar = () => {
                 objectFit: "contain",
               }}
             />
-            <Typography variant="caption">
-              Dj admin
+            <Typography variant="h6">
+              SPIN DJ
               {/* <br />
               <span style={{ marginLeft: "5px" }}>Yucatán</span> */}
             </Typography>

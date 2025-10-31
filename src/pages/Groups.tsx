@@ -90,8 +90,7 @@ export const Groups = () => {
         variant="scrollable"
         value={value}
         onChange={handleChange}
-        aria-label="Vertical tabs example"
-        sx={{ borderRight: 1, borderColor: "divider" }}
+        aria-label="tabs"
       >
         <Tab label="Grupos" {...a11yProps(0)} />
         <Tab label="Paquetes" {...a11yProps(1)} />

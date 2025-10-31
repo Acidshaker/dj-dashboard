@@ -6,6 +6,8 @@ import {
   DialogActions,
   Button,
   Typography,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 
 type AlertType = "success" | "error" | "warning";
@@ -16,9 +18,11 @@ interface AlertOptions {
   type?: AlertType;
   confirmText?: string;
   cancelText?: string;
-  onConfirm?: () => Promise<any>;
+  onConfirm?: (checkboxValue?: boolean) => Promise<any>;
   onCancel?: () => Promise<any>;
   showCancel?: boolean;
+  showCheckbox?: boolean;
+  checkboxLabel?: string;
 }
 
 interface AlertContextType {
@@ -36,6 +40,7 @@ export const useAlert = () => {
 export const AlertProvider = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<AlertOptions>({});
+  const [checkboxValue, setCheckboxValue] = useState(false);
 
   const showAlert = (opts: AlertOptions) => {
     setOptions(opts);
@@ -44,7 +49,7 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
 
   const handleConfirm = async () => {
     setOpen(false);
-    if (options.onConfirm) await options.onConfirm();
+    if (options.onConfirm) await options.onConfirm(checkboxValue);
   };
 
   const handleCancel = async () => {
@@ -59,6 +64,19 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
         <DialogTitle>{options.title || "Atención"}</DialogTitle>
         <DialogContent>
           <Typography>{options.description}</Typography>
+          {options.showCheckbox && (
+            <FormControlLabel
+              sx={{ marginTop: 2 }}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={checkboxValue}
+                  onChange={(e) => setCheckboxValue(e.target.checked)}
+                />
+              }
+              label={options.checkboxLabel || "Confirmar"}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           {options.showCancel && (

@@ -38,7 +38,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { toast } from "react-toastify";
 import Grid from "@mui/material/Grid";
 import { useEffect, useRef, useState } from "react";
-import { companies, events, groups } from "@/services/endpoints";
+import { companies, events, groups, user } from "@/services/endpoints";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import Checkbox, { CheckboxProps } from "@mui/material/Checkbox";
 import AsyncAutocomplete, {
@@ -46,6 +46,7 @@ import AsyncAutocomplete, {
 } from "../shared/AsyncAutocomplete";
 import { GroupForm } from "../groups/GroupForm";
 import { styled } from "@mui/material/styles";
+import { useAlerts } from "@/utils/alerts";
 
 interface props {
   open: boolean;
@@ -143,7 +144,7 @@ export const EventForm = ({
     folio: string;
     date: Dayjs;
     name: string;
-    group: string;
+    group: object;
     isCompany: boolean;
   }>({
     mode: "onTouched",
@@ -160,6 +161,7 @@ export const EventForm = ({
     formState: { errors },
     reset,
     watch,
+    setValue,
   } = methods;
 
   const dispatch = useDispatch();
@@ -169,6 +171,7 @@ export const EventForm = ({
   const [folio, setFolio] = useState("");
   const autocompleteRef = useRef<AsyncAutocompleteRef>(null);
 
+  const { confirmationAlert } = useAlerts();
   const getGroups = (params: {
     search: string;
     offset: number;
@@ -179,26 +182,23 @@ export const EventForm = ({
     setOpenAddModal(true);
   };
 
-  const handleCloseAddModal = () => {
+  const handleCloseAddModal = (item: any | null) => {
     setOpenAddModal(false);
+    console.log("🔍 Ref actual:", autocompleteRef.current);
+    console.log(item);
     autocompleteRef.current?.reload();
+    if (item) {
+      setValue("group", item.id);
+    }
   };
 
-  const onSubmit = async (body: any) => {
-    dispatch(showLoading());
-    const newBody = {
-      name: body.name,
-      groupId: body.group,
-      date: body.date,
-      folio: body.folio,
-      companyDataId: body.isCompany ? companyData.id : null,
-    };
+  const createEvent = async (body: any) => {
     try {
       if (!isEdit) {
-        const res = await events.createEvent(newBody);
+        const res = await events.createEvent(body);
         console.log(res.data.data);
       } else {
-        const res = await events.updateEvent(data.id, newBody);
+        const res = await events.updateEvent(data.id, body);
         console.log(res.data);
       }
       toast.success(
@@ -210,6 +210,29 @@ export const EventForm = ({
     } finally {
       dispatch(hideLoading());
     }
+  };
+
+  const onSubmit = async (body: any) => {
+    dispatch(showLoading());
+    const newBody = {
+      name: body.name,
+      groupId: body.group.id,
+      date: body.date,
+      folio: body.folio,
+      companyDataId: body.isCompany ? companyData.id : null,
+    };
+    try {
+      const res = await user.profile();
+      const userInfo = res.data.data;
+      if (userInfo.events_remaining === 1) {
+        confirmationAlert(
+          () => createEvent(newBody),
+          "Al crear un nuevo evento se agotara tu cupo de eventos, ¿deseas continuar?"
+        );
+      } else {
+        createEvent(newBody);
+      }
+    } catch (error) {}
   };
 
   const handleCancel = () => {
@@ -236,10 +259,17 @@ export const EventForm = ({
   };
 
   useEffect(() => {
-    getCompanyData();
     if (open && isEdit && data) {
-      reset({});
+      getCompanyData();
+      reset({
+        folio: data.folio,
+        date: dayjs(data.date),
+        isCompany: data.companyDataId ? true : false,
+        name: data.name,
+        group: data.group,
+      });
     } else if (open && !isEdit) {
+      getCompanyData();
       getFolio();
       reset(
         {
@@ -247,7 +277,7 @@ export const EventForm = ({
           date: dayjs(),
           isCompany: false,
           name: "",
-          group: "",
+          group: {},
         },
         { keepDirty: false }
       );
@@ -257,7 +287,7 @@ export const EventForm = ({
           date: dayjs(),
           isCompany: false,
           name: "",
-          group: "",
+          group: {},
         },
         { keepDirty: false }
       );
@@ -301,6 +331,7 @@ export const EventForm = ({
                   <TextField
                     key={folio}
                     label="Folio"
+                    InputLabelProps={{ shrink: watch("folio") !== "" }}
                     disabled
                     {...register("folio", {
                       required: required("Folio"),
@@ -345,6 +376,7 @@ export const EventForm = ({
                   <TextField
                     label="Nombre"
                     fullWidth
+                    InputLabelProps={{ shrink: watch("name") !== "" }}
                     {...register("name", {
                       required: required("Nombre"),
                       validate: noTrimSpaces,
@@ -355,39 +387,37 @@ export const EventForm = ({
                 </Grid>
                 <Grid size={{ md: 12, xs: 12 }}>
                   <AsyncAutocomplete
+                    ref={autocompleteRef}
                     name="group"
                     label="Grupo"
                     control={control}
-                    {...register("group", {
+                    rules={{
                       required: required("Grupo"),
-                      validate: noTrimSpaces,
-                    })}
+                    }}
                     errors={errors}
                     fetchFn={getGroups}
-                    onAddClick={() => handleOpenAddModal()}
+                    onAddClick={handleOpenAddModal}
                   />
-                  {companyData && (
-                    <Grid size={{ md: 12, xs: 12 }}>
-                      <Controller
-                        name="isCompany"
-                        control={control}
-                        render={({ field }) => (
-                          <FormControlLabel
-                            control={
-                              <BpCheckbox
-                                checked={field.value}
-                                onChange={(e) =>
-                                  field.onChange(e.target.checked)
-                                }
-                              />
-                            }
-                            label="¿Deseas mostrar los datos de tu empresa en el QR del evento?"
-                          />
-                        )}
-                      />
-                    </Grid>
-                  )}
                 </Grid>
+                {companyData && (
+                  <Grid size={{ md: 12, xs: 12 }}>
+                    <Controller
+                      name="isCompany"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <BpCheckbox
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                            />
+                          }
+                          label="¿Deseas mostrar los datos de tu empresa en el QR del evento?"
+                        />
+                      )}
+                    />
+                  </Grid>
+                )}
               </Grid>
 
               <Divider sx={{ my: 2 }} />

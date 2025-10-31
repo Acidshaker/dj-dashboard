@@ -39,6 +39,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
 import SettingsBackupRestoreIcon from "@mui/icons-material/SettingsBackupRestore";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import {
   useState,
   useMemo,
@@ -52,6 +53,7 @@ import type { RootState } from "../../store";
 import { showLoading, hideLoading, setParams } from "../../store/uiSlice";
 import { tableConfig } from "../../services/tableConfig";
 import { toast } from "react-toastify";
+import { eventMusic } from "@/services/endpoints";
 
 interface Props {
   action: string;
@@ -63,6 +65,10 @@ interface Props {
   isQr?: boolean;
   isDashboard?: boolean;
   isDelete?: boolean;
+  isOnlyTable?: boolean;
+  isPlay?: boolean;
+  hasActions?: boolean;
+  extraParams?: Record<string, any>;
   onAddClick: (data?: Record<string, any>) => void;
   onQrClick?: (data?: Record<string, any>) => void;
   onDashboardClick?: (data?: Record<string, any>) => void;
@@ -79,7 +85,11 @@ const BaseTable = forwardRef(
       isQr,
       isDashboard,
       isDelete,
+      isPlay,
+      hasActions = true,
       isReactive = true,
+      isOnlyTable = false,
+      extraParams,
       onAddClick,
       onQrClick,
       onDashboardClick,
@@ -125,7 +135,8 @@ const BaseTable = forwardRef(
 
     const theme = useTheme();
 
-    const { confirmationAlert } = useAlerts();
+    const { confirmationAlert, showConfirmationAlertWithCheckbox } =
+      useAlerts();
 
     // Mantener localSearch sincronizado con la store
     useEffect(() => {
@@ -158,7 +169,7 @@ const BaseTable = forwardRef(
       if (!tableConfig[action]) return;
       dispatch(showLoading());
       try {
-        const res = await tableConfig[action].getData(p);
+        const res = await tableConfig[action].getData({ ...p, ...extraParams });
         setData(res.data.data.results);
         setCount(res.data.data.count);
       } catch (err) {
@@ -202,7 +213,73 @@ const BaseTable = forwardRef(
           dispatch(hideLoading());
         }
       };
-      confirmationAlert(foo, "¿Seguro que deseas activar este elemento?");
+      confirmationAlert(foo, "¿Seguro que deseas reactivar este elemento?");
+    };
+
+    const onPlayClick = (data: any) => {
+      if (data.is_paid) {
+        const foo = async () => {
+          dispatch(showLoading());
+          try {
+            const res = await eventMusic.completeEventMusic({
+              eventMusicId: data.id,
+            });
+            console.log(res.data.data);
+            toast.success("Solicitud completada con éxito");
+            await getData();
+          } catch (err) {
+            console.log(err);
+          } finally {
+            dispatch(hideLoading());
+          }
+        };
+        confirmationAlert(foo, "¿Seguro que deseas completar esta solicitud?");
+      } else {
+        const foo = async (checkboxValue: boolean) => {
+          const body = {
+            eventMusicId: data.id,
+            isPaid: checkboxValue,
+          };
+          dispatch(showLoading());
+          try {
+            const res = await eventMusic.completeEventMusic(body);
+            console.log(res.data.data);
+            toast.success("Solicitud completada con éxito");
+            await getData();
+          } catch (err) {
+            console.log(err);
+          } finally {
+            dispatch(hideLoading());
+          }
+        };
+        showConfirmationAlertWithCheckbox(
+          foo,
+          "Marcar como pagada",
+          "¿Seguro que deseas completar esta solicitud?"
+        );
+      }
+    };
+
+    const changeToPaid = (data: any) => {
+      const foo = async () => {
+        dispatch(showLoading());
+        try {
+          const res = await eventMusic.changeToPaid({
+            eventMusicId: data.id,
+          });
+          console.log(res.data.data);
+          toast.success("Solicitud actualizada con éxito");
+          await getData();
+        } catch (err) {
+          console.log(err);
+        } finally {
+          dispatch(hideLoading());
+        }
+      };
+      confirmationAlert(
+        foo,
+        "¿Deseas marcar esta solicitud como pagada? esta acción es irreversible"
+      );
     };
 
     // montaje inicial: setParams con initialParams y llamar getData(initialParams)
@@ -223,14 +300,21 @@ const BaseTable = forwardRef(
         align: "center",
         render: (_, row: any) => (
           <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-            {isQr && (
+            {isPlay && (
+              <Tooltip title="Reproducir">
+                <IconButton onClick={() => onPlayClick(row)} color="success">
+                  <PlayArrowIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+            {isQr && row.is_active && (
               <Tooltip title="Visualizar QR">
                 <IconButton onClick={() => onQrClick(row)} color="success">
                   <QrCodeIcon />
                 </IconButton>
               </Tooltip>
             )}
-            {isDashboard && (
+            {isDashboard && row.is_active && (
               <Tooltip title="Ir al tablero">
                 <IconButton onClick={() => onDashboardClick(row)} color="info">
                   <ArrowForwardIcon />
@@ -321,7 +405,7 @@ const BaseTable = forwardRef(
               </Tooltip>
             )}
 
-            {isReactive && !row.is_active && (
+            {isReactive && !row.is_active && action !== "musicRequests" && (
               <Tooltip title="Reactivar">
                 <IconButton
                   onClick={() => reactiveItem(row.id)}
@@ -335,7 +419,7 @@ const BaseTable = forwardRef(
         ),
       };
 
-      setHeaders([...baseHeaders, actionColumn]);
+      setHeaders([...baseHeaders, hasActions ? actionColumn : {}]);
 
       getData(initialParams);
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -343,6 +427,7 @@ const BaseTable = forwardRef(
 
     useImperativeHandle(ref, () => ({
       reloadData: () => getData(),
+      getItems: () => data,
     }));
 
     // filtro Activos/Inactivos — construir newParams y usarlo
@@ -381,98 +466,100 @@ const BaseTable = forwardRef(
               gap: 2,
             }}
           >
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <TextField
-                size="small"
-                placeholder="Buscar..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const newParams = {
-                      ...params,
-                      search: localSearch,
-                      page: 1,
-                      offset: 0,
-                    };
-                    dispatch(setParams(newParams));
-                    getData(newParams);
-                    setHasSearched(true);
-                  }
+            {!isOnlyTable && (
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  alignItems: "center",
+                  flexWrap: "wrap",
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                  endAdornment: hasSearched && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => {
-                          setLocalSearch("");
-                          const newParams = {
-                            ...params,
-                            search: "",
-                            page: 1,
-                            offset: 0,
-                          };
-                          dispatch(setParams(newParams));
-                          getData(newParams);
-                          setHasSearched(false);
-                        }}
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <Tooltip title="Filtros">
-                <IconButton onClick={handleOpenMenu}>
-                  <FilterListIcon />
-                </IconButton>
-              </Tooltip>
-
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleCloseMenu}
               >
-                <MenuItem onClick={isActiveFilter(true)}>
-                  <Checkbox checked={params.is_active === true} />
-                  <ListItemText primary="Activos" />
-                </MenuItem>
-                <MenuItem onClick={isActiveFilter(false)}>
-                  <Checkbox checked={params.is_active === false} />
-                  <ListItemText primary="Inactivos" />
-                </MenuItem>
-              </Menu>
+                <TextField
+                  size="small"
+                  placeholder="Buscar..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const newParams = {
+                        ...params,
+                        search: localSearch,
+                        page: 1,
+                        offset: 0,
+                      };
+                      dispatch(setParams(newParams));
+                      getData(newParams);
+                      setHasSearched(true);
+                    }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: hasSearched && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => {
+                            setLocalSearch("");
+                            const newParams = {
+                              ...params,
+                              search: "",
+                              page: 1,
+                              offset: 0,
+                            };
+                            dispatch(setParams(newParams));
+                            getData(newParams);
+                            setHasSearched(false);
+                          }}
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
 
-              <Tooltip title="Refrescar">
-                <IconButton onClick={() => getData()}>
-                  <CachedIcon />
-                </IconButton>
-              </Tooltip>
+                <Tooltip title="Filtros">
+                  <IconButton onClick={handleOpenMenu}>
+                    <FilterListIcon />
+                  </IconButton>
+                </Tooltip>
 
-              {addLabel && (
-                <Button
-                  variant="contained"
-                  onClick={() => onAddClick()}
-                  endIcon={<AddIcon />}
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleCloseMenu}
                 >
-                  {addLabel}
-                </Button>
-              )}
-            </Box>
+                  <MenuItem onClick={isActiveFilter(true)}>
+                    <Checkbox checked={params.is_active === true} />
+                    <ListItemText primary="Activos" />
+                  </MenuItem>
+                  <MenuItem onClick={isActiveFilter(false)}>
+                    <Checkbox checked={params.is_active === false} />
+                    <ListItemText primary="Inactivos" />
+                  </MenuItem>
+                </Menu>
+
+                <Tooltip title="Refrescar">
+                  <IconButton onClick={() => getData()}>
+                    <CachedIcon />
+                  </IconButton>
+                </Tooltip>
+
+                {addLabel && (
+                  <Button
+                    variant="contained"
+                    onClick={() => onAddClick()}
+                    endIcon={<AddIcon />}
+                  >
+                    {addLabel}
+                  </Button>
+                )}
+              </Box>
+            )}
           </Box>
           <TableContainer
             sx={{ flex: 1, overflow: "auto", position: "relative" }}
@@ -488,6 +575,7 @@ const BaseTable = forwardRef(
                       sx={{
                         cursor: header.sortable ? "pointer" : "default",
                         userSelect: "none",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       <Box
@@ -516,10 +604,28 @@ const BaseTable = forwardRef(
                     <Fade in timeout={400} key={idx}>
                       <TableRow>
                         {headers.map((header) => (
-                          <TableCell align={header.align} key={header.key}>
-                            {header.render
-                              ? header.render(row[header.key], row)
-                              : row[header.key]}
+                          <TableCell
+                            align={header.align}
+                            key={header.key}
+                            sx={{ whiteSpace: "nowrap" }}
+                          >
+                            {header.render ? (
+                              header.key === "is_paid" && !row[header.key] ? (
+                                <Box
+                                  onClick={() => changeToPaid(row)}
+                                  sx={{
+                                    cursor: "pointer",
+                                    display: "inline-block",
+                                  }}
+                                >
+                                  {header.render(row[header.key], row)}
+                                </Box>
+                              ) : (
+                                header.render(row[header.key], row)
+                              )
+                            ) : (
+                              row[header.key]
+                            )}
                           </TableCell>
                         ))}
                       </TableRow>

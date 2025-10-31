@@ -19,6 +19,7 @@ export const auth = {
 
 export const user = {
   profile: () => api.get("/users/profile"),
+  updateProfile: (data: any) => api.patch("/users/update-name", data),
 };
 
 export const plans = {
@@ -49,6 +50,8 @@ export const packages = {
     api.get("/packages", { params }),
   createPackage: (data: any) => api.post("/packages", data),
   updatePackage: (id: string, data: any) => api.patch(`/packages/${id}`, data),
+  desactivePackage: (id: string) => api.post(`/packages/${id}/desactive`),
+  reactivePackage: (id: string) => api.post(`/packages/${id}/reactive`),
 };
 
 export const groups = {
@@ -56,12 +59,40 @@ export const groups = {
   getGroupById: (id: string) => api.get(`/groups/${id}`),
   createGroup: (data: any) => api.post("/groups", data),
   updateGroup: (id: string, data: any) => api.patch(`/groups/${id}`, data),
+  desactiveGroup: (id: string) => api.post(`/groups/${id}/desactive`),
+  reactiveGroup: (id: string) => api.post(`/groups/${id}/reactive`),
 };
 
 export const events = {
   getEvents: (params?: Record<string, any>) => api.get("/events", { params }),
+  getRequests: (params?: Record<string, any>) =>
+    api.get("/events/requests", { params }),
   getFolio: () => api.get<any>("/events/generate-folio"),
   getEventById: (id: string) => api.get(`/events/${id}`),
+  getEventByIdClient: (id: string) => api.get(`/events/client/${id}`),
+  getStripeValidation: (id: string) =>
+    api.get(`/events/client/user-stripe-check/${id}`),
   createEvent: (data: any) => api.post("/events", data),
+  cancelEvent: (id: string) => api.post(`/events/${id}/desactive`),
+  reactiveEvent: (id: string) => api.post(`/events/${id}/reactive`),
+  startEvent: (id: string) => api.post(`/events/${id}/start`),
+  finishEvent: (id: string) => api.post(`/events/${id}/finish`),
   updateEvent: (id: string, data: any) => api.patch(`/events/${id}`, data),
+};
+
+export const songs = {
+  getSongs: (params?: Record<string, any>) => api.get("/songs", { params }),
+};
+
+export const eventMusic = {
+  createSession: (data: any) => api.post("/event-music/create-session", data),
+  completeEventMusic: (data: any) => api.post("/event-music/complete", data),
+  changeToPaid: (data: any) => api.post("/event-music/paid", data),
+  getEventMusicBySessionId: (params: Record<string, any>) =>
+    api.get("/event-music", { params }),
+};
+
+export const stripe = {
+  account: () => api.get("/stripe/account"),
+  getStatus: () => api.post("/stripe/verify"),
 };

@@ -13,6 +13,9 @@ import { User } from "@/pages/User";
 import { Subscriptions } from "@/pages/Subscriptions";
 import { Company } from "@/pages/Company";
 import { Groups } from "@/pages/Groups";
+import { EventDetails } from "@/pages/EventDetails";
+import ClientLayout from "@/layouts/ClientLayout";
+import { EventDetailsClient } from "@/pages/EventDetailsClient";
 
 const AppRouter = () => {
   return (
@@ -35,6 +38,24 @@ const AppRouter = () => {
                 <Events />
               </DashboardLayout>
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:eventId"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <EventDetails />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client/event/:eventId"
+          element={
+            <ClientLayout>
+              <EventDetailsClient />
+            </ClientLayout>
           }
         />
 

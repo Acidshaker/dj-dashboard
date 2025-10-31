@@ -10,18 +10,15 @@ import {
   Avatar,
   Box,
   Button,
-  Chip,
   Container,
   Divider,
   Fade,
   Grid,
   IconButton,
-  Paper,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { G } from "msw/lib/core/HttpResponse-CKZrrwKE";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
@@ -29,9 +26,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import DoneIcon from "@mui/icons-material/Done";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import { UserInfo } from "@/types/UserInfo";
+import { toast } from "react-toastify";
 
 export const Company = () => {
   const {
@@ -39,6 +34,7 @@ export const Company = () => {
     handleSubmit,
     formState: { errors },
     control,
+    watch,
     reset,
   } = useForm<{
     name: string;
@@ -48,14 +44,17 @@ export const Company = () => {
   }>({
     mode: "onChange",
   });
+
   const dispatch = useDispatch();
   const [company, setCompany] = useState<any | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setLogoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
@@ -70,6 +69,7 @@ export const Company = () => {
 
   const handleImageRemove = () => {
     setLogoPreview(null);
+    setLogoFile(null);
   };
 
   const getCompany = async () => {
@@ -84,8 +84,37 @@ export const Company = () => {
     }
   };
 
-  const onSubmit = (data: any) => {
-    console.log(data);
+  const onSubmit = async (data: any) => {
+    const body = new FormData();
+    body.append("company_name", data.name);
+    body.append("company_phone", data.phone);
+    body.append("company_email", data.email);
+
+    // Si hay archivo, lo subimos
+    if (logoFile) {
+      body.append("logo", logoFile);
+      body.append("replace_logo", "true");
+    }
+
+    // Si no hay preview pero sí había logo antes, lo eliminamos
+    if (!logoPreview && company?.logo) {
+      body.append("logo", "");
+      body.append("replace_logo", "true");
+    }
+
+    try {
+      dispatch(showLoading());
+      const res = company
+        ? await companies.updateCompany(company.id, body)
+        : await companies.createCompany(body);
+      toast.success("Empresa guardada con éxito");
+      getCompany(); // refrescar datos
+    } catch (error) {
+      console.log(error);
+      // toast.error("Error al guardar empresa");
+    } finally {
+      dispatch(hideLoading());
+    }
   };
 
   useEffect(() => {
@@ -95,13 +124,14 @@ export const Company = () => {
   useEffect(() => {
     if (company) {
       reset({
-        name: company.name,
-        phone: company.phone,
-        email: company.email,
-        logo: company.logo ? company.logo : null,
+        name: company.company_name,
+        phone: company.company_phone,
+        email: company.company_email,
+        logo: company.logo || null,
       });
+      setLogoPreview(company.logo || null);
     }
-  }, [company]);
+  }, [company, reset]);
 
   return (
     <Box
@@ -115,8 +145,8 @@ export const Company = () => {
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Mi empresa
       </Typography>
+
       <Container sx={{ width: "100%", mt: 2, flexGrow: 1 }}>
-        {/* Formulario */}
         <Fade in={true} timeout={1000}>
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -134,7 +164,6 @@ export const Company = () => {
               onChange={handleImageChange}
             />
 
-            {/* <Container sx={{ flexGrow: 1 }}> */}
             <Grid container spacing={2}>
               <Grid
                 size={{ md: 12, xs: 12 }}
@@ -147,32 +176,22 @@ export const Company = () => {
                 }}
               >
                 <Avatar
-                  src={logoPreview || company?.logo || undefined}
+                  src={logoPreview || undefined}
                   sx={{ width: 100, height: 100, mb: 1 }}
                 >
-                  {!logoPreview && !company?.logo && (
-                    <BusinessIcon sx={{ fontSize: 50 }} />
-                  )}
+                  {!logoPreview && <BusinessIcon sx={{ fontSize: 50 }} />}
                 </Avatar>
 
                 <Box sx={{ display: "flex", gap: 1 }}>
                   <Tooltip
-                    title={
-                      logoPreview || company?.logo
-                        ? "Editar imagen"
-                        : "Agregar imagen"
-                    }
+                    title={logoPreview ? "Editar imagen" : "Agregar imagen"}
                   >
                     <IconButton color="info" onClick={handleImageUploadClick}>
-                      {logoPreview || company?.logo ? (
-                        <EditIcon />
-                      ) : (
-                        <AddIcon />
-                      )}
+                      {logoPreview ? <EditIcon /> : <AddIcon />}
                     </IconButton>
                   </Tooltip>
 
-                  {(logoPreview || company?.logo) && (
+                  {logoPreview && (
                     <Tooltip title="Eliminar imagen">
                       <IconButton color="error" onClick={handleImageRemove}>
                         <DeleteIcon />
@@ -184,9 +203,9 @@ export const Company = () => {
 
               <Grid size={{ md: 12, xs: 12 }}>
                 <TextField
-                  key={company?.name}
                   label="Nombre de la empresa"
                   fullWidth
+                  InputLabelProps={{ shrink: watch("name") !== "" }}
                   {...register("name", {
                     required: required("Nombre de la empresa"),
                     validate: {
@@ -198,11 +217,12 @@ export const Company = () => {
                   helperText={errors.name?.message || " "}
                 />
               </Grid>
+
               <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
-                  key={company?.phone}
                   label="Teléfono"
                   fullWidth
+                  InputLabelProps={{ shrink: watch("phone") !== "" }}
                   {...register("phone", {
                     required: required("Teléfono"),
                     validate: {
@@ -214,11 +234,12 @@ export const Company = () => {
                   helperText={errors.phone?.message || " "}
                 />
               </Grid>
+
               <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
-                  key={company?.email}
                   label="Correo electrónico"
                   fullWidth
+                  InputLabelProps={{ shrink: watch("email") !== "" }}
                   {...register("email", {
                     required: required("Correo electrónico"),
                     validate: {
@@ -231,7 +252,6 @@ export const Company = () => {
                 />
               </Grid>
             </Grid>
-            {/* </Container> */}
 
             <Divider sx={{ my: 2 }} />
 

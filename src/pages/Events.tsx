@@ -1,5 +1,5 @@
 import { Box, Typography, Button } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import BaseTable from "@/components/shared/Table";
 import { useRef, useState } from "react";
@@ -19,6 +19,7 @@ const Events = () => {
     companyDataId: string | null;
   } | null>(null);
 
+  const navigate = useNavigate();
   const handleOpenQr = (item: any) => {
     setQrData({
       name: item.name,
@@ -43,6 +44,10 @@ const Events = () => {
     setIsModalOpen(true);
   };
 
+  const openDashboard = (item: any) => {
+    navigate("/events/" + item.id);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     tableRef.current?.reloadData();
@@ -61,7 +66,7 @@ const Events = () => {
         onQrClick={(item: any) => {
           handleOpenQr(item);
         }}
-        onDashboardClick={(item: any) => console.log(item)}
+        onDashboardClick={openDashboard}
       />
       <EventForm
         open={isModalOpen}

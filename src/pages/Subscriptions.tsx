@@ -66,6 +66,20 @@ export const Subscriptions = () => {
     ? new Date(mySubscription?.renewal_date).toLocaleDateString()
     : "Sin renovación";
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "active":
+        return "Activa";
+
+      case "inactive":
+        return "Inactiva";
+      case "cancelled":
+        return "Cancelada";
+      default:
+        return "Expirada";
+    }
+  };
+
   const getPlans = async () => {
     dispatch(showLoading());
     try {
@@ -174,14 +188,22 @@ export const Subscriptions = () => {
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Mi suscripción
       </Typography>
-      {mySubscription && (
+      {mySubscription ? (
         <Fade in={mySubscription !== null}>
           <Paper
             elevation={3}
             sx={{
               p: 3,
               mb: 2,
-              borderLeft: "6px solid #1976d2",
+              borderLeft: `6px solid ${
+                mySubscription.status === "active"
+                  ? "#4CAF50"
+                  : mySubscription.status === "cancelled"
+                  ? "#FF9800"
+                  : mySubscription.status
+                  ? "#e03263ff"
+                  : "#2196F3"
+              }`,
               width: "100%",
               position: "relative",
             }}
@@ -212,12 +234,8 @@ export const Subscriptions = () => {
             <Typography variant="body2">
               Estado:{" "}
               <Chip
-                label={
-                  statusMap[mySubscription.status] || mySubscription.status
-                }
-                color={
-                  mySubscription.status === "active" ? "success" : "default"
-                }
+                label={getStatusLabel(mySubscription.status)}
+                color={mySubscription.status === "active" ? "success" : "error"}
               />
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
@@ -235,6 +253,23 @@ export const Subscriptions = () => {
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
               Precio: ${mySubscription.plan.price.toFixed(2)}
+            </Typography>
+          </Paper>
+        </Fade>
+      ) : (
+        <Fade in={!mySubscription}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 3,
+              mb: 2,
+              borderLeft: "6px solid #1976d2",
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            <Typography variant="body2">
+              No tienes ninguna suscripción
             </Typography>
           </Paper>
         </Fade>

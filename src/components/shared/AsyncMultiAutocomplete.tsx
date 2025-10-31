@@ -7,7 +7,7 @@ import {
   Chip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { Controller } from "react-hook-form";
+import { Controller, RegisterOptions } from "react-hook-form";
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import CheckIcon from "@mui/icons-material/Check";
 import { toast } from "react-toastify";
@@ -17,10 +17,12 @@ interface AsyncMultiAutocompleteProps {
   label: string;
   control: any;
   errors: any;
+  rules?: RegisterOptions;
   fetchFn: (params: {
     search: string;
     offset: number;
     limit: number;
+    page: number;
   }) => Promise<any>;
   valueModel?: (value: any) => any;
   onAddClick?: () => void;
@@ -44,6 +46,7 @@ const AsyncMultiAutocomplete = forwardRef<
       control,
       errors,
       maxSelections,
+      rules,
       renderChipLabel,
       disableSelected,
       fetchFn,
@@ -60,7 +63,11 @@ const AsyncMultiAutocomplete = forwardRef<
 
     const limit = 10;
 
-    const loadOptions = async (searchValue: string, pageValue: number) => {
+    const loadOptions = async (
+      searchValue: string,
+      pageValue: number,
+      append = false
+    ) => {
       setLoading(true);
       try {
         const offsetValue = (pageValue - 1) * limit;
@@ -68,19 +75,32 @@ const AsyncMultiAutocomplete = forwardRef<
           search: searchValue,
           offset: offsetValue,
           limit,
+          page: pageValue,
         });
-        const results = res.data.data.results;
+
+        const results = res.data.data.results ?? [];
         const newItems = results.map((item: any) => ({
           label: item.name,
           value: item.id,
           ...item,
         }));
 
-        setOptions((prev) =>
-          pageValue === 1
-            ? newItems
-            : [...prev.filter((o) => !o.isLoadMore), ...newItems]
-        );
+        // Filtrar el "Ver más..." anterior si existía
+        const prev = append ? options.filter((o) => !o.isLoadMore) : [];
+
+        // Combinar resultados
+        let finalList = [...prev, ...newItems];
+
+        // Agregar "Ver más..." solo si hay más páginas
+        if (pageValue < res.data.data.totalPages) {
+          finalList.push({
+            label: "Ver más...",
+            value: null,
+            isLoadMore: true,
+          });
+        }
+
+        setOptions(finalList);
         setTotalPages(res.data.data.totalPages);
       } catch (err) {
         console.error(err);
@@ -89,24 +109,17 @@ const AsyncMultiAutocomplete = forwardRef<
       }
     };
 
+    // 🔁 Cargar datos iniciales o tras cambiar búsqueda
     useEffect(() => {
-      loadOptions(search, page);
-    }, [search, page]);
-
-    useEffect(() => {
-      if (page < totalPages && !options.some((o) => o.label === "Ver más...")) {
-        setOptions((prev) => [
-          ...prev,
-          { label: "Ver más...", value: null, isLoadMore: true },
-        ]);
-      }
-    }, [options, page, totalPages]);
+      setPage(1);
+      loadOptions(search, 1, false);
+    }, [search]);
 
     useImperativeHandle(ref, () => ({
       reload: () => {
         setPage(1);
         setOptions([]);
-        loadOptions(search, 1);
+        loadOptions(search, 1, false);
       },
     }));
 
@@ -116,16 +129,18 @@ const AsyncMultiAutocomplete = forwardRef<
           <Controller
             name={name}
             control={control}
+            rules={rules}
             render={({ field, fieldState }) => (
               <Autocomplete
                 multiple
+                inputValue={search}
                 options={options}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 getOptionLabel={(option) =>
                   renderChipLabel ? renderChipLabel(option) : option.label
                 }
                 value={Array.isArray(field.value) ? field.value : []}
-                onChange={(_, value) => {
+                onChange={(_, value, reason) => {
                   const filtered = value.filter((v) => !v?.isLoadMore);
                   if (maxSelections && filtered.length > maxSelections) {
                     toast.info(
@@ -139,16 +154,24 @@ const AsyncMultiAutocomplete = forwardRef<
                       ? filtered.map(valueModel)
                       : filtered.map((v) => v)
                   );
+
+                  // 🧹 Limpiar el input al seleccionar un valor
+                  if (reason === "selectOption") {
+                    setSearch("");
+                  }
                 }}
                 onBlur={field.onBlur}
-                onInputChange={(_, value) => {
-                  setSearch(value);
-                  setPage(1);
+                onInputChange={(_, value, reason) => {
+                  // Solo cambiar el search cuando el usuario escribe o limpia
+                  if (reason === "input" || reason === "clear") {
+                    setSearch(value);
+                  }
                 }}
                 loading={loading}
                 renderTags={(value: any[], getTagProps) =>
                   value.map((option, index) => (
                     <Chip
+                      key={option.id ?? index}
                       label={
                         renderChipLabel ? renderChipLabel(option) : option.label
                       }
@@ -166,8 +189,14 @@ const AsyncMultiAutocomplete = forwardRef<
                           textAlign: "center",
                           cursor: "pointer",
                           color: "primary.main",
+                          fontWeight: 500,
                         }}
-                        onClick={() => setPage((prev) => prev + 1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nextPage = page + 1;
+                          setPage(nextPage);
+                          loadOptions(search, nextPage, true);
+                        }}
                       >
                         Ver más...
                       </Box>
@@ -218,6 +247,7 @@ const AsyncMultiAutocomplete = forwardRef<
             )}
           />
         </Box>
+
         <IconButton
           onClick={onAddClick}
           color="primary"

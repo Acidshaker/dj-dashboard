@@ -1,7 +1,7 @@
 import { Modal, Box, Typography, Button, Fade, Backdrop } from "@mui/material";
 import QRCode from "react-qr-code";
 import { toPng } from "html-to-image";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useTheme } from "@mui/material/styles";
 
 interface Props {
@@ -36,6 +36,8 @@ export const QrModal = ({
     width: 320,
   };
 
+  if (!open || !url || !name) return null;
+
   const handleDownload = async () => {
     if (!qrRef.current) return;
     try {
@@ -63,7 +65,6 @@ export const QrModal = ({
             ref={qrRef}
             style={{
               backgroundColor: isDark ? "#212529" : "#ffffff",
-              color: isDark ? "#f8f9fa" : "#344767",
               padding: "16px",
               borderRadius: "8px",
             }}
@@ -75,7 +76,6 @@ export const QrModal = ({
               <QRCode value={url} size={160} />
             </Box>
           </div>
-
           <Button
             variant="contained"
             color="primary"
