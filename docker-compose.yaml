@@ -2,7 +2,7 @@ version: "3"
 
 services:
   spindj-dashboard:
-    image: 330121144853.dkr.ecr.us-east-2.amazonaws.com/spindj-dashboard:latest
+    image: 335344609892.dkr.ecr.us-east-2.amazonaws.com/spindj-dashboard:latest
     container_name: spindj-dashboard
     restart: unless-stopped
     networks:
